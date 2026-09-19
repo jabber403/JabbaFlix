@@ -2,3 +2,5 @@ node_modules/
 *.db
 *.mp4Movies/
 *.mp4
+Movies/
+*.mp4
