@@ -7,13 +7,17 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MOVIES_DIR = process.env.STORAGE_DIR ? path.join(process.env.STORAGE_DIR, 'Movies') : path.join(__dirname, 'Movies');
+
+// Uses process.env.STORAGE_DIR if on Render persistent disk, else falls back to local Movies directory
+const MOVIES_DIR = process.env.STORAGE_DIR 
+  ? path.join(process.env.STORAGE_DIR, 'Movies') 
+  : path.join(__dirname, 'Movies');
 
 if (!fs.existsSync(MOVIES_DIR)) {
   fs.mkdirSync(MOVIES_DIR, { recursive: true });
 }
 
-// Database Connection
+// Database Setup
 const dbPath = process.env.STORAGE_DIR ? path.join(process.env.STORAGE_DIR, 'jabbaflix.db') : './jabbaflix.db';
 const db = new sqlite3.Database(dbPath);
 
@@ -62,13 +66,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/thumbnails', express.static(MOVIES_DIR));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'indie-flix-production-secret-key',
+  secret: process.env.SESSION_SECRET || 'jabbaflix-indie-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 
-// Streaming Helper
+// Video Streaming Helper
 function streamVideoFile(req, res, filePath) {
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
 
@@ -100,7 +104,7 @@ function streamVideoFile(req, res, filePath) {
   }
 }
 
-// --- AUTHENTICATION ---
+// AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
@@ -120,10 +124,10 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
-    if (err || !user) return res.status(400).json({ error: 'Invalid username or password' });
+    if (err || !user) return res.status(400).json({ error: 'Invalid credentials' });
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) return res.status(400).json({ error: 'Invalid username or password' });
+    if (!isValid) return res.status(400).json({ error: 'Invalid credentials' });
 
     req.session.user = { id: user.id, username: user.username };
     res.json({ success: true, user: req.session.user });
@@ -139,17 +143,15 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
-// --- PROGRESS TRACKING ---
+// PROGRESS & INTERACTIONS
 app.post('/api/progress', (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { showTitle, episodeFileName, episodeTitle, currentTime, duration } = req.body;
-  const userId = req.session.user.id;
-
   db.run(`
     INSERT INTO watch_progress (user_id, show_title, episode_filename, episode_title, current_time, duration, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-  `, [userId, showTitle, episodeFileName, episodeTitle, currentTime, duration], (err) => {
+  `, [req.session.user.id, showTitle, episodeFileName, episodeTitle, currentTime, duration], (err) => {
     if (err) return res.status(500).json({ error: 'Failed to save progress' });
     res.json({ success: true });
   });
@@ -157,7 +159,6 @@ app.post('/api/progress', (req, res) => {
 
 app.get('/api/progress', (req, res) => {
   if (!req.session.user) return res.json([]);
-
   db.all(`
     SELECT * FROM watch_progress 
     WHERE user_id = ? AND (duration - current_time) > 10 AND current_time > 5
@@ -168,10 +169,8 @@ app.get('/api/progress', (req, res) => {
   });
 });
 
-// --- INTERACTIONS ---
 app.get('/api/interactions/:showTitle', (req, res) => {
   const showTitle = req.params.showTitle;
-
   db.get(`SELECT COUNT(*) as count FROM user_interactions WHERE show_title = ? AND reaction = 1`, [showTitle], (err, likesRow) => {
     db.get(`SELECT COUNT(*) as count FROM user_interactions WHERE show_title = ? AND reaction = -1`, [showTitle], (err, dislikesRow) => {
       const likes = likesRow ? likesRow.count : 0;
@@ -190,7 +189,6 @@ app.get('/api/interactions/:showTitle', (req, res) => {
 
 app.post('/api/interactions/toggle', (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Log in required' });
-
   const { showTitle, action } = req.body;
   const userId = req.session.user.id;
 
@@ -212,7 +210,7 @@ app.post('/api/interactions/toggle', (req, res) => {
   });
 });
 
-// --- CATALOG AND MEDIA ---
+// FETCH MOVIES & SHOWS FROM MOVIES FOLDER
 app.get('/api/shows', (req, res) => {
   fs.readdir(MOVIES_DIR, { withFileTypes: true }, (err, entries) => {
     if (err) return res.status(500).json({ error: 'Failed to read media library' });
@@ -223,9 +221,9 @@ app.get('/api/shows', (req, res) => {
 
     entries.forEach(entry => {
       if (entry.isDirectory()) {
-        const showFolderName = entry.name;
-        const showFolderPath = path.join(MOVIES_DIR, showFolderName);
-        const folderFiles = fs.readdirSync(showFolderPath);
+        const folderName = entry.name;
+        const folderPath = path.join(MOVIES_DIR, folderName);
+        const folderFiles = fs.readdirSync(folderPath);
 
         const thumbFile = folderFiles.find(file => 
           imageExts.includes(path.extname(file).toLowerCase()) && 
@@ -233,7 +231,7 @@ app.get('/api/shows', (req, res) => {
         ) || folderFiles.find(file => imageExts.includes(path.extname(file).toLowerCase()));
 
         const thumbnailUrl = thumbFile 
-          ? `/thumbnails/${encodeURIComponent(showFolderName)}/${encodeURIComponent(thumbFile)}`
+          ? `/thumbnails/${encodeURIComponent(folderName)}/${encodeURIComponent(thumbFile)}`
           : 'https://via.placeholder.com/400x225/181c24/00e5ff?text=Indie+Film';
 
         const episodes = folderFiles
@@ -242,13 +240,13 @@ app.get('/api/shows', (req, res) => {
             id: idx + 1,
             title: path.parse(file).name.replace(/[_-]/g, ' ').toUpperCase(),
             fileName: file,
-            streamUrl: `/api/stream/show/${encodeURIComponent(showFolderName)}/${encodeURIComponent(file)}`
+            streamUrl: `/api/stream/show/${encodeURIComponent(folderName)}/${encodeURIComponent(file)}`
           }));
 
         if (episodes.length > 0) {
           shows.push({
-            id: showFolderName.toLowerCase().replace(/\s+/g, '-'),
-            title: showFolderName,
+            id: folderName.toLowerCase().replace(/\s+/g, '-'),
+            title: folderName,
             thumbnail: thumbnailUrl,
             episodes: episodes
           });
