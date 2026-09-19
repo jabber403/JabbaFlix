@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JabbaFlix - Indie Film Streaming Platform</title>
+  
+  <!-- GOOGLE ADSENSE SCRIPT (Replace with your Client ID) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_CLIENT_ID" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --card: #181c24;
+      --accent: #00e5ff;
+      --text: #ffffff;
+      --text-dim: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 3rem; }
+
+    header {
+      background: #000;
+      padding: 0.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #222;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .logo { font-size: 1.8rem; font-weight: 900; color: var(--accent); letter-spacing: 2px; }
+    .logo span { color: #fff; }
+
+    .search-box { flex: 1; max-width: 400px; position: relative; }
+    .search-box input {
+      width: 100%;
+      background: #181c24;
+      border: 1px solid #333;
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+
+    .user-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-secondary { background: transparent; color: #fff; border: 1px solid #444; }
+
+    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+
+    .ad-banner-container {
+      width: 100%;
+      margin: 1rem 0;
+      text-align: center;
+      background: #111;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px dashed #333;
+    }
+
+    .player-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    }
+
+    video { width: 100%; height: 500px; background: #000; display: block; }
+
+    .end-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(13, 15, 18, 0.92);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .end-screen-title { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .next-episode-name { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
+    .end-screen-timer { font-size: 1rem; color: #fff; margin-bottom: 1.5rem; }
+    .end-screen-actions { display: flex; gap: 1rem; }
+
+    .info-bar {
+      background: var(--card);
+      padding: 1.2rem;
+      border-radius: 0 0 12px 12px;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .interaction-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .action-btn {
+      background: #0d0f12;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { border-color: var(--accent); }
+    .action-btn.active { background: rgba(0, 229, 255, 0.15); border-color: var(--accent); color: var(--accent); }
+
+    .section-title { font-size: 1.3rem; margin-bottom: 1rem; border-left: 4px solid var(--accent); padding-left: 10px; margin-top: 2rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+
+    .show-card {
+      background: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .show-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+    .show-thumb { width: 100%; height: 140px; object-fit: cover; background: #111; }
+    .show-details { padding: 1rem; }
+
+    .continue-row { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 10px; }
+    .cw-card {
+      background: var(--card);
+      min-width: 250px;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #222;
+      cursor: pointer;
+    }
+    .cw-card:hover { border-color: var(--accent); }
+    .progress-bar-bg { background: #333; height: 6px; border-radius: 3px; margin-top: 10px; overflow: hidden; }
+    .progress-bar-fill { background: var(--accent); height: 100%; width: 0%; }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 8px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .modal-content input {
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #000;
+      color: #fff;
+    }
+
+    .episodes-container { background: var(--card); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; display: none; }
+    .episode-item { background: #0d0f12; padding: 0.8rem 1.2rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #222; margin-top: 0.5rem; }
+    .episode-item:hover { border-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">JABBA<span>FLIX</span></div>
+    
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search indie films & series..." oninput="handleSearch()">
+    </div>
+
+    <div class="user-actions" id="userArea">
+      <button class="btn btn-secondary" onclick="openModal('loginModal')">Log In</button>
+      <button class="btn" onclick="openModal('signupModal')">Sign Up</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Header Ad Unit -->
+    <div class="ad-banner-container">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-YOUR_ADSENSE_CLIENT_ID"
+           data-ad-slot="YOUR_ADSENSE_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <div class="player-wrapper">
+      <div id="endScreen" class="end-screen">
+        <div class="end-screen-title">Up Next</div>
+        <div id="nextEpisodeTitle" class="next-episode-name">--</div>
+        <div id="endScreenTimer" class="end-screen-timer">Playing in 10s</div>
+        <div class="end-screen-actions">
+          <button id="playNextBtn" class="btn" onclick="playNextEpisodeImmediately()">Play Next Now</button>
+          <button class="btn btn-secondary" onclick="cancelEndScreen()">Cancel</button>
+        </div>
+      </div>
+
+      <video id="player" controls poster="https://via.placeholder.com/1280x720/181c24/ffffff?text=Select+a+Film+Below"></video>
+    </div>
+
+    <div class="info-bar">
+      <div>
+        <h2 id="movieTitle">Select an independent title to stream</h2>
+        <p id="movieSubtitle" style="color: var(--text-dim); font-size: 0.85rem; margin-top: 2px;">Original Creator Catalog</p>
+      </div>
+
+      <div class="interaction-buttons" id="interactionBox" style="display: none;">
+        <button id="favBtn" class="action-btn" onclick="toggleInteraction('favorite')">⭐ Favorite</button>
+        <button id="watchBtn" class="action-btn" onclick="toggleInteraction('watchlist')">🔖 Watchlist</button>
+        <button id="likeBtn" class="action-btn" onclick="toggleInteraction('like')">👍 <span id="likeCount">0</span></button>
+        <button id="dislikeBtn" class="action-btn" onclick="toggleInteraction('dislike')">👎 <span id="dislikeCount">0</span></button>
+      </div>
+    </div>
+
+    <div id="continueSection" style="display: none;">
+      <h2 class="section-title">Continue Watching</h2>
+      <div id="continueRow" class="continue-row"></div>
+    </div>
+
+    <div id="episodesBox" class="episodes-container">
+      <h2 id="selectedShowTitle" class="section-title" style="margin-top: 0;">Episodes / Parts</h2>
+      <div id="episodesList"></div>
+    </div>
+
+    <h2 class="section-title">Indie Catalog</h2>
+    <div id="showsCatalog" class="grid"></div>
+  </div>
+
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <h2>Log In</h2>
+      <input type="text" id="loginUser" placeholder="Username">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button class="btn" onclick="login()">Log In</button>
+      <button class="btn btn-secondary" onclick="closeModal('loginModal')">Cancel</button>
+    </div>
+  </div>
+
+  <div id="signupModal" class="modal">
+    <div class="modal-content">
+      <h2>Sign Up</h2>
+      <input type="text" id="signupUser" placeholder="Username">
+      <input type="password" id="signupPass" placeholder="Password">
+      <button class="btn" onclick="signup()">Create Account</button>
+      <button class="btn btn-secondary" onclick="closeModal('signupModal')">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const player = document.getElementById('player');
+    const movieTitle = document.getElementById('movieTitle');
+    const movieSubtitle = document.getElementById('movieSubtitle');
+    const showsCatalog = document.getElementById('showsCatalog');
+    const episodesBox = document.getElementById('episodesBox');
+    const episodesList = document.getElementById('episodesList');
+    const continueSection = document.getElementById('continueSection');
+    const continueRow = document.getElementById('continueRow');
+    const interactionBox = document.getElementById('interactionBox');
+
+    const endScreen = document.getElementById('endScreen');
+    const nextEpisodeTitle = document.getElementById('nextEpisodeTitle');
+    const endScreenTimer = document.getElementById('endScreenTimer');
+
+    let allShows = [];
+    let currentUser = null;
+    let currentTargetEpisode = null;
+    let currentShowTitle = null;
+    let progressInterval = null;
+    let nextEpisodeTarget = null;
+    let endScreenCountdown = null;
+
+    function requireAuth() {
+      if (!currentUser) {
+        openModal('loginModal');
+        return false;
+      }
+      return true;
+    }
+
+    async function checkUser() {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      currentUser = data.user;
+      renderUserHeader();
+      if (currentUser) fetchContinueWatching();
+      if (currentShowTitle) loadInteractions(currentShowTitle);
+    }
+
+    function renderUserHeader() {
+      const userArea = document.getElementById('userArea');
+      if (currentUser) {
+        userArea.innerHTML = `
+          <span>👤 <b>${currentUser.username}</b></span>
+          <button class="btn btn-secondary" onclick="logout()">Log Out</button>
+        `;
+      } else {
+        userArea.innerHTML = `
+          <button class="btn btn-secondary" onclick="openModal('loginModal')">Log In</button>
+          <button class="btn" onclick="openModal('signupModal')">Sign Up</button>
+        `;
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById('loginUser').value;
+      const password = document.getElementById('loginPass').value;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentUser = data.user;
+        closeModal('loginModal');
+        renderUserHeader();
+        fetchContinueWatching();
+        if (currentShowTitle) loadInteractions(currentShowTitle);
+      } else alert(data.error);
+    }
+
+    async function signup() {
+      const username = document.getElementById('signupUser').value;
+      const password = document.getElementById('signupPass').value;
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentUser = data.user;
+        closeModal('signupModal');
+        renderUserHeader();
+        fetchContinueWatching();
+        if (currentShowTitle) loadInteractions(currentShowTitle);
+      } else alert(data.error);
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      currentUser = null;
+      renderUserHeader();
+      continueSection.style.display = 'none';
+      if (currentShowTitle) loadInteractions(currentShowTitle);
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    async function loadInteractions(showTitle) {
+      interactionBox.style.display = 'flex';
+      const res = await fetch(`/api/interactions/${encodeURIComponent(showTitle)}`);
+      const data = await res.json();
+
+      document.getElementById('likeCount').innerText = data.likes;
+      document.getElementById('dislikeCount').innerText = data.dislikes;
+      document.getElementById('favBtn').classList.toggle('active', !!data.userState.is_favorite);
+      document.getElementById('watchBtn').classList.toggle('active', !!data.userState.in_watchlist);
+      document.getElementById('likeBtn').classList.toggle('active', data.userState.reaction === 1);
+      document.getElementById('dislikeBtn').classList.toggle('active', data.userState.reaction === -1);
+    }
+
+    async function toggleInteraction(action) {
+      if (!requireAuth()) return;
+      if (!currentShowTitle) return;
+
+      const res = await fetch('/api/interactions/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showTitle: currentShowTitle, action })
+      });
+      const data = await res.json();
+      if (data.success) loadInteractions(currentShowTitle);
+    }
+
+    async function fetchContinueWatching() {
+      if (!currentUser) return;
+      const res = await fetch('/api/progress');
+      const items = await res.json();
+
+      if (items.length === 0) {
+        continueSection.style.display = 'none';
+        return;
+      }
+
+      continueSection.style.display = 'block';
+      continueRow.innerHTML = '';
+
+      items.forEach(item => {
+        const pct = Math.floor((item.current_time / item.duration) * 100);
+        const card = document.createElement('div');
+        card.className = 'cw-card';
+        card.innerHTML = `
+          <div style="font-size:0.8rem; color:var(--accent); font-weight:bold;">${item.show_title}</div>
+          <div style="font-size:0.95rem; font-weight:bold; margin-top:2px;">${item.episode_title}</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${pct}%;"></div></div>
+          <div style="font-size:0.75rem; color:var(--text-dim); margin-top:4px;">${Math.floor((item.duration - item.current_time) / 60)}m left</div>
+        `;
+
+        card.onclick = () => {
+          if (!requireAuth()) return;
+          const showObj = allShows.find(s => s.title === item.show_title);
+          if (showObj) {
+            const epObj = showObj.episodes.find(e => e.fileName === item.episode_filename);
+            if (epObj) startPlayback(epObj, item.show_title, item.current_time);
+          }
+        };
+
+        continueRow.appendChild(card);
+      });
+    }
+
+    function startProgressSaving() {
+      clearInterval(progressInterval);
+      progressInterval = setInterval(() => {
+        if (currentUser && currentTargetEpisode && player.duration) {
+          fetch('/api/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              showTitle: currentTargetEpisode.showTitle,
+              episodeFileName: currentTargetEpisode.fileName,
+              episodeTitle: currentTargetEpisode.title,
+              currentTime: player.currentTime,
+              duration: player.duration
+            })
+          });
+        }
+      }, 5000);
+    }
+
+    async function fetchShows() {
+      const res = await fetch('/api/shows');
+      allShows = await res.json();
+      renderShows(allShows);
+    }
+
+    function renderShows(shows) {
+      showsCatalog.innerHTML = '';
+      if (shows.length === 0) {
+        showsCatalog.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; background: var(--card); border-radius: 8px;">No films listed yet. Upload files to your directory.</div>`;
+        return;
+      }
+
+      shows.forEach(show => {
+        const card = document.createElement('div');
+        card.className = 'show-card';
+        card.innerHTML = `
+          <img class="show-thumb" src="${show.thumbnail}" alt="${show.title}">
+          <div class="show-details">
+            <div class="show-title">${show.title}</div>
+            <div class="show-count">📁 ${show.episodes.length} Media File(s)</div>
+          </div>
+        `;
+        card.onclick = () => selectShow(show);
+        showsCatalog.appendChild(card);
+      });
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allShows.filter(show => {
+        const matchesShow = show.title.toLowerCase().includes(q);
+        const matchesEpisode = show.episodes.some(ep => ep.title.toLowerCase().includes(q));
+        return matchesShow || matchesEpisode;
+      });
+      renderShows(filtered);
+    }
+
+    function selectShow(show) {
+      episodesBox.style.display = 'block';
+      document.getElementById('selectedShowTitle').innerText = `${show.title}`;
+      episodesList.innerHTML = '';
+
+      show.episodes.forEach(ep => {
+        const item = document.createElement('div');
+        item.className = 'episode-item';
+        item.innerHTML = `
+          <div><b>▶ ${ep.title}</b></div>
+          <div style="font-size:0.8rem; color: var(--text-dim);">${ep.fileName}</div>
+        `;
+        item.onclick = () => {
+          if (!requireAuth()) return;
+          startPlayback(ep, show.title, 0);
+        };
+        episodesList.appendChild(item);
+      });
+
+      episodesBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function startPlayback(episode, showTitle, startAt = 0) {
+      cancelEndScreen();
+
+      currentTargetEpisode = { ...episode, showTitle };
+      currentShowTitle = showTitle;
+      loadInteractions(showTitle);
+
+      movieTitle.innerText = `${showTitle}: ${episode.title}`;
+      movieSubtitle.innerText = `Streaming original indie release`;
+      player.src = episode.streamUrl;
+
+      if (startAt > 0) {
+        player.currentTime = startAt;
+      }
+
+      player.play();
+      startProgressSaving();
+      player.onended = handleEpisodeEnded;
+    }
+
+    function handleEpisodeEnded() {
+      const currentShow = allShows.find(s => s.title === currentTargetEpisode.showTitle);
+      if (!currentShow) return;
+
+      const currentIndex = currentShow.episodes.findIndex(e => e.fileName === currentTargetEpisode.fileName);
+      if (currentIndex !== -1 && currentIndex + 1 < currentShow.episodes.length) {
+        nextEpisodeTarget = currentShow.episodes[currentIndex + 1];
+        showEndScreen(nextEpisodeTarget);
+      }
+    }
+
+    function showEndScreen(nextEpisode) {
+      nextEpisodeTitle.innerText = nextEpisode.title;
+      endScreen.style.display = 'flex';
+
+      let timer = 10;
+      endScreenTimer.innerText = `Playing next episode in ${timer}s`;
+
+      clearInterval(endScreenCountdown);
+      endScreenCountdown = setInterval(() => {
+        timer--;
+        if (timer > 0) {
+          endScreenTimer.innerText = `Playing next episode in ${timer}s`;
+        } else {
+          clearInterval(endScreenCountdown);
+          playNextEpisodeImmediately();
+        }
+      }, 1000);
+    }
+
+    function playNextEpisodeImmediately() {
+      clearInterval(endScreenCountdown);
+      endScreen.style.display = 'none';
+      if (nextEpisodeTarget) {
+        startPlayback(nextEpisodeTarget, currentTargetEpisode.showTitle, 0);
+      }
+    }
+
+    function cancelEndScreen() {
+      clearInterval(endScreenCountdown);
+      endScreen.style.display = 'none';
+      nextEpisodeTarget = null;
+    }
+
+    checkUser();
+    fetchShows();
+  </script>
+</body>
+</html>
