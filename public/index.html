@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JabbaFlix - Indie Streaming Platform</title>
+  <title>JabbaFlix - Streaming Platform</title>
   
   <!-- GOOGLE ADSENSE SCRIPT -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4254427760573386" crossorigin="anonymous"></script>
@@ -196,7 +196,7 @@
     <div class="logo">JABBA<span>FLIX</span></div>
     
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Search indie films & series..." oninput="handleSearch()">
+      <input type="text" id="searchInput" placeholder="Search films & series..." oninput="handleSearch()">
     </div>
 
     <div class="user-actions" id="userArea">
@@ -206,7 +206,7 @@
   </header>
 
   <div class="container">
-    <!-- AUTO ADSENSE DISPLAY BANNER -->
+    <!-- GOOGLE ADSENSE DISPLAY BANNER -->
     <div class="ad-banner-container">
       <ins class="adsbygoogle"
            style="display:block"
@@ -232,8 +232,8 @@
 
     <div class="info-bar">
       <div>
-        <h2 id="movieTitle">Select an independent title to stream</h2>
-        <p id="movieSubtitle" style="color: var(--text-dim); font-size: 0.85rem; margin-top: 2px;">Original Creator Catalog</p>
+        <h2 id="movieTitle">Select a title to stream</h2>
+        <p id="movieSubtitle" style="color: var(--text-dim); font-size: 0.85rem; margin-top: 2px;">Media Catalog</p>
       </div>
 
       <div class="interaction-buttons" id="interactionBox" style="display: none;">
@@ -254,7 +254,7 @@
       <div id="episodesList"></div>
     </div>
 
-    <h2 class="section-title">Indie Catalog</h2>
+    <h2 class="section-title">Catalog</h2>
     <div id="showsCatalog" class="grid"></div>
   </div>
 
@@ -471,7 +471,7 @@
     function renderShows(shows) {
       showsCatalog.innerHTML = '';
       if (shows.length === 0) {
-        showsCatalog.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; background: var(--card); border-radius: 8px;">No films listed yet. Upload files to your Movies directory.</div>`;
+        showsCatalog.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; background: var(--card); border-radius: 8px;">No titles listed yet. Upload files to your Movies directory.</div>`;
         return;
       }
 
@@ -530,7 +530,7 @@
       loadInteractions(showTitle);
 
       movieTitle.innerText = `${showTitle}: ${episode.title}`;
-      movieSubtitle.innerText = `Streaming original indie release`;
+      movieSubtitle.innerText = `Streaming catalog release`;
       player.src = episode.streamUrl;
 
       if (startAt > 0) {
