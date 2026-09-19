@@ -2,31 +2,52 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 
-const FOLDER_ID = '1f1aKEVKqtSM2DVDCTWzOweqO5nIyGUjJ';
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY; // Add your Google API Key in Render environment variables
+const FOLDER_ID = '1f1aKEVKqtSM2DVDCTWzOweqO5nIyGUjJ'; // Your main Movies folder ID
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 app.use(express.static('public'));
 
-// Endpoint to dynamically fetch catalog from Google Drive
 app.get('/api/movies', async (req, res) => {
   try {
-    // Query Google Drive API for subfolders/files inside your Movies folder
-    const response = await axios.get(
-      `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`
+    // 1. Get all subfolders inside the main Movies folder
+    const foldersRes = await axios.get(
+      `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)&key=${GOOGLE_API_KEY}`
     );
-    
-    // Map items to video and thumbnail stream links
-    const movies = response.data.files.map(file => ({
-      id: file.id,
-      title: file.name,
-      videoUrl: `https://lh3.googleusercontent.com/d/${file.id}`,
-      // For Google Drive direct stream links, you can use:
-      // https://drive.google.com/uc?export=download&id=FILE_ID
-    }));
+
+    const subfolders = foldersRes.data.files;
+    const movies = [];
+
+    // 2. Loop through each movie subfolder to find video and thumbnail files
+    for (const folder of subfolders) {
+      const filesRes = await axios.get(
+        `https://www.googleapis.com/drive/v3/files?q='${folder.id}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`
+      );
+
+      const items = filesRes.data.files;
+      let videoFile = null;
+      let thumbFile = null;
+
+      for (const item of items) {
+        if (item.mimeType === 'video/mp4' || item.name.endsWith('.mp4')) {
+          videoFile = item;
+        } else if (item.mimeType.startsWith('image/') || item.name.toLowerCase().includes('thumbnail')) {
+          thumbFile = item;
+        }
+      }
+
+      if (videoFile) {
+        movies.push({
+          id: videoFile.id,
+          title: folder.name, // Uses the subfolder name as the movie title
+          videoUrl: `https://drive.google.com/uc?export=download&id=${videoFile.id}`,
+          thumbnailUrl: thumbFile ? `https://drive.google.com/uc?export=download&id=${thumbFile.id}` : ''
+        });
+      }
+    }
 
     res.json(movies);
   } catch (error) {
-    console.error('Error fetching Drive files:', error.message);
+    console.error('Error fetching from Google Drive subfolders:', error.message);
     res.status(500).json({ error: 'Failed to fetch catalog from Google Drive' });
   }
 });
